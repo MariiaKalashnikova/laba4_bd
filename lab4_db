@@ -1,0 +1,215 @@
+use onlinestore;
+
+db.createCollection("items");
+db.getCollection("items").insertMany([{"category" : "Phone",
+    "model" : "iPhone 6",
+    "producer" : "Apple",
+    "price" : 600
+    },
+    {"category" : "Phone",
+    "model" : "iPhone 5",
+    "producer" : "Apple",
+    "price" : 200
+    },
+    {"category" : "Phone",
+    "model" : "Samsung Galaxy S24 Ultra",
+    "producer" : "Samsung",
+    "price" : 1000
+    },
+    {"category" : "TV",
+    "model" : "Samsung QE55S95DAUXUA",
+    "producer" : "Samsung",
+    "price" : 3000
+    },
+    {"category" : "TV",
+    "model" : "Xiaomi TV S Mini LED 55",
+    "producer" : "Xiaomi",
+    "price" : 900
+    },
+    {"category" : "Smart Watch",
+    "model" : "Apple Watch SE",
+    "producer" : "Apple",
+    "price" : 600
+    },
+    {"category" : "Smart Watch",
+    "model" : "Watch Fit 3",
+    "producer" : "Huawei",
+    "price" : 600
+    }]);
+
+const allitems = db.getCollection("items").find();
+allitems.forEach(printjson);
+
+db.getCollection("items").countDocuments({"category": "TV"});
+
+db.getCollection("items").distinct("category").length;
+
+db.getCollection("items").distinct("producer");
+
+
+db.getCollection("items").find({$and:[{"category": "Phone"}, {"price": {$gt: 500, $lt: 1200}}]});
+db.getCollection("items").find({$or:[{"model": "Watch Fit 3"}, {"model": "Apple Watch SE"}]});
+db.getCollection("items").find({"producer": {$in: ["Apple", "Samsung"]}});
+
+db.getCollection("items").updateMany({"category": "Smart Watch"}, {$set: {"sale": "50%"}});
+db.getCollection("items").updateOne({"model": "Samsung QE55S95DAUXUA"}, {$set: {"price": "7000"}});
+
+db.getCollection("items").find({"sale": {$exists: 1}});
+
+db.getCollection("items").updateMany({"sale": {$exists: 1}}, {$inc: {"price": 100}});
+
+const item1 = db.getCollection("items").findOne({"model": "iPhone 6"})._id;
+const item2 = db.getCollection("items").findOne({"model": "iPhone 5"})._id;
+const item3 = db.getCollection("items").findOne({"model": "Samsung Galaxy S24 Ultra"})._id;
+const item4 = db.getCollection("items").findOne({"model": "Samsung QE55S95DAUXUA"})._id;
+const item5 = db.getCollection("items").findOne({"model": "Xiaomi TV S Mini LED 55"})._id;
+const item6 = db.getCollection("items").findOne({"model": "Apple Watch SE"})._id;
+const item7 = db.getCollection("items").findOne({"model": "Watch Fit 3"})._id;
+db.createCollection("orders");
+db.getCollection("orders").insertMany([
+    { 
+        "order_number" : 201513,
+        "date" : ISODate("2025-04-14"),
+        "total_sum" : 1300,
+        "customer" : {
+         "name" : "Andrii",
+         "surname" : "Rodinov",
+         "phones" : [ 9876543, 1234567],
+         "address" : "PTI, Peremohy 37, Kyiv, UA"
+        },
+        "payment" : {
+         "card_owner" : "Andrii Rodionov",
+         "cardId" : 12345678
+        },
+        "items_id" : [item1, item6]
+        },
+        { 
+            "order_number" : 201514,
+            "date" : ISODate("2025-04-14"),
+            "total_sum" : 800,
+            "customer" : {
+             "name" : "Sara",
+             "surname" : "Rodinova",
+             "phones" : [ 2365789, 9087123],
+             "address" : "PTI, Peremohy 32, Kyiv, UA"
+            },
+            "payment" : {
+             "card_owner" : "Sara Rodionova",
+             "cardId" : 12345679
+            },
+            "items_id" : [item2, item6]
+            },
+        { 
+            "order_number" : 201515,
+            "date" : ISODate("2025-04-14"),
+            "total_sum" : 900,
+            "customer" : {
+             "name" : "Mycola",
+             "surname" : "Vasylkov",
+             "phones" : [ 1111111, 4567893],
+             "address" : "PTI, Borova 28, Poltava, UA"
+            },
+            "payment" : {
+             "card_owner" : "Mycola Vasylkova",
+             "cardId" : 12375629
+            },
+            "items_id" : [item5]
+            },
+        { 
+            "order_number" : 201516,
+            "date" : ISODate("2025-04-15"),
+            "total_sum" : 3600,
+            "customer" : {
+             "name" : "Artem",
+             "surname" : "Dychenko",
+             "phones" : [ 1151111, 4567823],
+             "address" : "PTI, Malinova 15, Kharkiv, UA"
+            },
+            "payment" : {
+             "card_owner" : "Artem Dychenko",
+             "cardId" : 92375629
+            },
+            "items_id" : [item4, item6]
+            }
+        ]);
+
+const allorder = db.getCollection("orders").find();
+allorder.forEach(printjson);
+
+const ordercost = db.getCollection("orders").find({"total_sum": {$gt: 1000}});
+ordercost.forEach(printjson);
+
+db.getCollection("orders").find({"customer.name": "Artem", "customer.surname": "Dychenko"});
+
+db.getCollection("orders").find({"items_id": ObjectId('680a743b9596e1fa6f3ec402')});
+
+const X = 600; 
+db.getCollection("orders").updateMany({"items_id": ObjectId('680a743b9596e1fa6f3ec3fe')},
+    {$push: {"items_id": ObjectId('680a743b9596e1fa6f3ec3fd')},
+     $inc: {"total_sum": X}});
+
+db.getCollection("orders").aggregate([
+    {$match: {"order_number": 201516}}, {
+      $project: {"_id": 0, "total": {$size: "$items_id"}}}]);
+
+const custorder = db.getCollection("orders").aggregate([
+{ $match: {"total_sum": {$gt: 1350}}},
+{$project: {
+"customer.name": 1,
+"customer.surname": 1,
+"customer.phones": 1,
+"customer.address": 1,
+"payment.cardId": 1}}
+]); 
+custorder.forEach(printjson);
+
+db.getCollection("orders").updateMany({"date": {$gte: ISODate("2025-04-15"), $lte: ISODate("2025-06-15")}}, {$set: {"items_id": []}});
+
+db.getCollection("orders").updateMany({}, {$set: {"customer.name": "Ann"}});
+
+db.getCollection("orders").aggregate([{$match: {"customer.name": "Ann", "customer.surname": "Rodinov"}}, {$lookup:{from: "items", localField:"items_id", foreignField:"_id", as: "itemfororder"}}, {$project:{ 
+"_id": 0, "customer.name": 1, 
+        "customer.surname": 1,
+        "itemfororder.model":1,
+        "itemfororder.price":1}}]);
+
+db.createCollection("cappedcol", {capped: true, size: 100000, max: 5});
+db.getCollection("cappedcol").insertMany([{
+    "name": "Andriy",
+    "surname": "Rodinov",
+    "dateresponse": ISODate("2025-04-14"),
+    "response": "Гарний магазин1"
+  },
+  {
+    "name": "Ann",
+    "surname": "Kavaka",
+    "dateresponse": ISODate("2025-04-15"),
+    "response": "Гарний магазин2"
+  },
+  {
+    "name": "Sara",
+    "surname": "Taranova",
+    "dateresponse": ISODate("2025-04-16"),
+    "response": "Гарний магазин3"
+  },
+  {
+    "name": "Vova",
+    "surname": "Makovin",
+    "dateresponse": ISODate("2025-04-16"),
+    "response": "Гарний магазин4"
+  },
+  {
+    "name": "Olga",
+    "surname": "Tovano",
+    "dateresponse": ISODate("2025-04-17"),
+    "response": "Гарний магазин5"
+  }]);
+db.getCollection("cappedcol").insertOne({"name": "David",
+    "surname": "Malva",
+    "dateresponse": ISODate("2025-04-18"),
+    "response": "Гарний магазин6"});
+
+
+
+
+
